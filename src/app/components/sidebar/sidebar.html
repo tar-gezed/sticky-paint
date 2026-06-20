@@ -1,0 +1,183 @@
+<div class="flex flex-col h-full bg-slate-200/90 border-l border-slate-300 select-none">
+  <!-- Header -->
+  <div class="p-4 border-b border-slate-300 bg-white/40 flex items-center justify-between">
+    <div class="flex flex-col">
+      <h2 class="text-sm font-semibold text-slate-800 tracking-wide uppercase">Calques</h2>
+      <span class="text-xs text-slate-500 font-medium animate-fade-in">
+        {{ paintService.layers().length }} {{ paintService.layers().length > 1 ? 'objets' : 'objet' }}
+      </span>
+    </div>
+    <div class="text-[10px] font-bold px-2 py-0.5 bg-slate-300/60 text-slate-600 rounded uppercase tracking-wider">
+      Stacking
+    </div>
+  </div>
+
+  <!-- Layers List -->
+  <div class="flex-1 overflow-y-auto p-3 space-y-2"
+       cdkDropList
+       (cdkDropListDropped)="onDrop($event)">
+    @if (paintService.layers().length === 0) {
+      <div class="flex flex-col items-center justify-center h-48 text-slate-400 border-2 border-dashed border-slate-300/80 rounded-xl p-4 text-center bg-white/10 backdrop-blur-sm">
+        <svg class="w-8 h-8 mb-2 opacity-50 text-slate-500 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+        <span class="text-xs font-semibold text-slate-600">Aucun calque</span>
+        <span class="text-[10px] opacity-75 mt-1 text-slate-500">Créez une forme ou cliquez sur + Nouveau calque</span>
+      </div>
+    } @else {
+      @for (layer of paintService.layers(); track layer; let idx = $index) {
+        <div cdkDrag
+             (click)="selectLayer(layer, $event)"
+             [ngClass]="{
+               'bg-slate-200 border-t-slate-400 border-l-slate-400 border-r-white border-b-white shadow-inner': isSelected(layer),
+               'bg-white border-t-white border-l-white border-r-slate-300 border-b-slate-300 shadow-sm hover:bg-slate-50': !isSelected(layer),
+               'opacity-50 hover:opacity-75': !layer.visible
+             }"
+             class="group relative flex items-center gap-2.5 p-2 rounded-none border transition-all duration-100 cursor-pointer select-none">
+          
+          <!-- Drag Handle -->
+          <div cdkDragHandle class="p-1 cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <circle cx="9" cy="5" r="1.5" fill="currentColor"/>
+              <circle cx="15" cy="5" r="1.5" fill="currentColor"/>
+              <circle cx="9" cy="12" r="1.5" fill="currentColor"/>
+              <circle cx="15" cy="12" r="1.5" fill="currentColor"/>
+              <circle cx="9" cy="19" r="1.5" fill="currentColor"/>
+              <circle cx="15" cy="19" r="1.5" fill="currentColor"/>
+            </svg>
+          </div>
+
+          <!-- Layer Icon or Preview thumbnail -->
+          <div class="w-8 h-8 rounded-none flex items-center justify-center shrink-0 shadow-inner bg-slate-100 overflow-hidden relative border border-slate-300"
+               [ngClass]="{
+                 'text-blue-600': layer.type === 'rect',
+                 'text-amber-600': layer.type === 'ellipse' || layer.type === 'circle',
+                 'text-rose-600': layer.type === 'triangle',
+                 'text-teal-600': layer.type === 'line' || layer.type === 'arrow',
+                 'text-purple-600': layer.type === 'textbox' || layer.type === 'text',
+                 'text-emerald-600': layer.type === 'image',
+                 'text-indigo-600': layer.type === 'path',
+                 'text-slate-600': !['rect', 'ellipse', 'circle', 'triangle', 'line', 'arrow', 'textbox', 'text', 'image', 'path'].includes(layer.type)
+               }">
+            @if (getThumbnail(layer)) {
+              <img [src]="getThumbnail(layer)" class="max-w-[85%] max-h-[85%] object-contain drop-shadow-sm select-none pointer-events-none" />
+            } @else {
+              @switch (layer.type) {
+                @case ('rect') {
+                  <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <rect x="4" y="4" width="16" height="16" rx="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                }
+                @case ('ellipse') {
+                  <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <ellipse cx="12" cy="12" rx="9" ry="6" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                }
+                @case ('circle') {
+                  <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="8" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                }
+                @case ('triangle') {
+                  <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3L2 20h20L12 3z" />
+                  </svg>
+                }
+                @case ('line') {
+                  <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <line x1="4" y1="20" x2="20" y2="4" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                }
+                @case ('arrow') {
+                  <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                }
+                @case ('textbox') {
+                  <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7" />
+                  </svg>
+                }
+                @case ('text') {
+                  <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7" />
+                  </svg>
+                }
+                @case ('image') {
+                  <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                }
+                @case ('path') {
+                  <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                }
+                @default {
+                  <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                }
+              }
+            }
+          </div>
+
+          <!-- Name -->
+          <div class="flex-1 min-w-0 flex flex-col justify-center">
+            <span class="text-xs font-semibold text-slate-700 truncate leading-snug">
+              {{ getLayerName(layer) }}
+            </span>
+            <span class="text-[9px] text-slate-400 font-mono tracking-tight leading-none mt-0.5">
+              Type: {{ layer.type }}
+            </span>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex items-center gap-1 shrink-0">
+            <!-- Visibility Button -->
+            <button (click)="paintService.toggleLayerVisibility(layer)"
+                    [title]="layer.visible ? 'Masquer le calque' : 'Afficher le calque'"
+                    [class.text-blue-500]="layer.visible"
+                    [class.text-slate-400]="!layer.visible"
+                    class="action-btn p-1.5 rounded hover:bg-slate-300/50 transition-colors duration-100"
+                    type="button">
+              @if (layer.visible) {
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              } @else {
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                </svg>
+              }
+            </button>
+
+            <!-- Delete Button -->
+            <button (click)="paintService.deleteLayer(layer)"
+                    class="action-btn p-1.5 rounded text-slate-400 hover:bg-red-500/10 hover:text-red-600 transition-colors duration-100"
+                    title="Supprimer le calque"
+                    type="button">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+
+        </div>
+      }
+    }
+  </div>
+
+  <!-- Bottom Actions -->
+  <div class="p-4 border-t border-slate-300 bg-white/40">
+    <button (click)="paintService.createNewLayer()"
+            class="w-full flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-extrabold text-white bg-blue-700 hover:bg-blue-600 active:bg-blue-800 rounded-none border-t border-l border-sky-400 border-b-2 border-r-2 border-slate-950 transition-all cursor-pointer"
+            type="button">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+      </svg>
+      Nouveau calque
+    </button>
+  </div>
+</div>
